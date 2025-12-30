@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 connectDB();
 
-const DAILY_PROBLEMS = ["two-sum", "palindrome-number", "roman-to-integer", "longest-common-prefix", "valid-parentheses"];
+
 
 const getHeaders = () => {
   const agents = [
@@ -26,19 +26,31 @@ const getHeaders = () => {
   };
 };
 
+
+// The 5 Specific POTD Slugs
+const DAILY_PROBLEMS = [
+  "find-the-town-judge",
+  "number-of-provinces",
+  "find-closest-node-to-given-two-nodes",
+  "maximize-amount-after-two-days-of-conversions",
+  "minimum-cost-path-with-edge-reversals"
+];
+
 async function syncUserLeetCodeData(username) {
-  const todayMidnight = new Date();
-  todayMidnight.setHours(0, 0, 0, 0);
-  const midnightTimestamp = Math.floor(todayMidnight.getTime() / 1000);
+  // --- 1. SET THE 24-HOUR WINDOW (IST or UTC) ---
+  const now = new Date();
+  const todayMidnight = new Date(now.setHours(0, 0, 0, 0)).getTime();
+  const yesterdayMidnight = todayMidnight - (24 * 60 * 60 * 1000);
 
   const query = `query combinedUserStats($username: String!) {
     matchedUser(username: $username) {
       submitStats { acSubmissionNum { difficulty count } }
     }
-    recentSubmissionList(username: $username, limit: 10) {
+    recentSubmissionList(username: $username, limit: 20) {
       titleSlug timestamp statusDisplay
     }
   }`;
+
 
   try {
     const response = await axios.post(
@@ -53,43 +65,56 @@ async function syncUserLeetCodeData(username) {
     const data = response.data.data;
     if (!data?.matchedUser) return null;
 
+    // --- 2. CALCULATE BASE POINTS ---
     const stats = data.matchedUser.submitStats.acSubmissionNum;
     const easy = stats.find(i => i.difficulty === "Easy")?.count || 0;
     const med = stats.find(i => i.difficulty === "Medium")?.count || 0;
     const hard = stats.find(i => i.difficulty === "Hard")?.count || 0;
     
     let totalPoints = (easy * 1) + (med * 2) + (hard * 3);
-    const solvedBonusToday = new Set();
 
+    // --- 3. CALCULATE TIME-LIMITED BONUS ---
+    const solvedBonusToday = new Set();
+    
     data.recentSubmissionList?.forEach(sub => {
-      if (sub.statusDisplay === "Accepted" && parseInt(sub.timestamp) >= midnightTimestamp && DAILY_PROBLEMS.includes(sub.titleSlug)) {
+      const subTime = parseInt(sub.timestamp) * 1000; // Convert to milliseconds
+      
+      // Check: Accepted AND in the 5 Problems AND within the 24h Window
+      if (
+        sub.statusDisplay === "Accepted" && 
+        DAILY_PROBLEMS.includes(sub.titleSlug) &&
+        subTime >= yesterdayMidnight && 
+        subTime < todayMidnight
+      ) {
         solvedBonusToday.add(sub.titleSlug);
       }
     });
 
     totalPoints += (solvedBonusToday.size * 10);
 
+    // --- 4. UPDATE DATABASE ---
     return await User.findOneAndUpdate(
-    { username: username.toLowerCase() },
-    { 
-      easy, 
-      medium: med, 
-      hard, 
-      points: totalPoints, 
-      lastSync: Date.now() 
-    }, 
-    { upsert: true, new: true } 
-  );
+      { username: username.toLowerCase() },
+      { 
+        easy, 
+        medium: med, 
+        hard, 
+        points: totalPoints, 
+        lastSync: new Date() 
+      },
+      { upsert: true, new: true }
+    );
   } catch (err) {
-    console.error(`⚠️ Skipping ${username}: ${err.message}`);
+    console.error(`⚠️ Error syncing ${username}: ${err.message}`);
     return null;
   }
 }
 
+
 // --- SYSTEM BATCH ROUTE (Triggered by GitHub Action) ---
 app.get("/api/system/sync-batch", async (req, res) => {
   const { auth, limit } = req.query;
-  const syncLimit = parseInt(310) || 310; // Default to 30 for hourly refresh
+  const syncLimit = parseInt(310) || 3; // Default to 30 for hourly refresh
 
   if (auth !== process.env.SYNC_SECRET) {
     console.log("🚫 Unauthorized batch attempt");
