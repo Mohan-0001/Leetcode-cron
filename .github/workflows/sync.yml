@@ -3,7 +3,7 @@ name: LeetCode High-Frequency Sync
 on:
   schedule:
     # Runs every 6 minutes
-    - cron: '*/6 * * * *'
+    - cron: '*/14 * * * *'
   workflow_dispatch: 
 
 jobs:

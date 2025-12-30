@@ -70,10 +70,16 @@ async function syncUserLeetCodeData(username) {
     totalPoints += (solvedBonusToday.size * 10);
 
     return await User.findOneAndUpdate(
-      { username: username.toLowerCase() },
-      { username: username.toLowerCase(), displayName: username, easy, medium: med, hard, points: totalPoints, lastSync: new Date() },
-      { upsert: true, new: true }
-    );
+    { username: username.toLowerCase() },
+    { 
+      easy, 
+      medium: med, 
+      hard, 
+      points: totalPoints, 
+      lastSync: Date.now() 
+    }, 
+    { upsert: true, new: true } 
+  );
   } catch (err) {
     console.error(`⚠️ Skipping ${username}: ${err.message}`);
     return null;
@@ -83,7 +89,7 @@ async function syncUserLeetCodeData(username) {
 // --- SYSTEM BATCH ROUTE (Triggered by GitHub Action) ---
 app.get("/api/system/sync-batch", async (req, res) => {
   const { auth, limit } = req.query;
-  const syncLimit = parseInt(limit) || 30; // Default to 30 for hourly refresh
+  const syncLimit = parseInt(310) || 310; // Default to 30 for hourly refresh
 
   if (auth !== process.env.SYNC_SECRET) {
     console.log("🚫 Unauthorized batch attempt");
