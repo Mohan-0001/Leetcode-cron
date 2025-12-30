@@ -4,7 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { User } from "./models/User.js";
 import { connectDB } from "./utils/db.js";
-import users from "./user.json" assert { type: "json" };
+// import users from "./user.json" assert { type: "json" };
 
 dotenv.config();
 const app = express();
