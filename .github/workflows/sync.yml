@@ -12,5 +12,5 @@ jobs:
     steps:
       - name: Trigger 30-User Batch
         run: |
-          curl -L -X GET "https://alfreda-unreasoned-lory.ngrok-free.dev/api/system/sync-batch?auth=${{ secrets.SYNC_SECRET }}&limit=376" \
+          curl -L -X GET "https://alfreda-unreasoned-lory.ngrok-free.dev/api/system/sync-batch?auth=${{ secrets.SYNC_SECRET }}&limit=60" \
           -H "ngrok-skip-browser-warning: true"
