@@ -4,12 +4,31 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { User } from "./models/User.js";
 import { connectDB } from "./utils/db.js";
+import users from "./user.json" assert { type: "json" };
 
 dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
 connectDB();
+
+
+// const startServer = async () => {
+//   try {
+//     await connectDB();
+
+//     await User.insertMany(users, { ordered: false });
+//     console.log("✅ Users inserted successfully");
+
+//     app.listen(process.env.PORT || 5000, () => {
+//       console.log("🚀 Server started");
+//     });
+//   } catch (err) {
+//     console.error("❌ Error:", err.message);
+//   }
+// };
+
+// startServer();
 
 const getHeaders = () => {
   const agents = [
@@ -92,7 +111,7 @@ async function syncUserLeetCodeData(username) {
 app.get("/api/system/sync-batch", async (req, res) => {
   const { auth } = req.query;
   
-  // 1. SAFE LIMIT: Only 30 users per "Watchman" visit to prevent timeout
+  // 1. SAFE LIMIT: Only 60 users per "Watchman" visit to prevent timeout
   const syncLimit = 60; 
 
   if (auth !== process.env.SYNC_SECRET) {
