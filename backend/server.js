@@ -11,6 +11,13 @@ app.use(cors());
 app.use(express.json());
 connectDB();
 
+try{
+  await User.updateMany({}, { $set: { points: 0 , timestamp: 1767022200000} });
+  console.log("✅ Reset all user points to 0 at server start.");
+}catch(err){
+  console.error("⚠️ Error resetting user points at server start:", err.message);
+}
+
 
 const getHeaders = () => {
   const agents = [
@@ -35,74 +42,136 @@ const DAILY_PROBLEMS = [
   "minimum-cost-path-with-edge-reversals"
 ];
 
+// async function syncUserLeetCodeData(username) {
+
+//   // --- 1. SET THE 24-HOUR WINDOW (IST or UTC) ---
+//   const now = new Date();
+//   const todayMidnight = new Date(now.setHours(0, 0, 0, 0)).getTime();
+//   const yesterdayMidnight = todayMidnight - (24 * 60 * 60 * 1000);
+
+//   const query = `query combinedUserStats($username: String!) {
+//     matchedUser(username: $username) {
+//       submitStats { acSubmissionNum { difficulty count } }
+//     }
+//     recentSubmissionList(username: $username, limit: 20) {
+//       titleSlug timestamp statusDisplay
+//     }
+//   }`;
+
+
+//   try {
+//     const response = await axios.post(
+//       "https://leetcode.com/graphql",
+//       { query, variables: { username } },
+//       { 
+//         timeout: 15000, 
+//         headers: getHeaders()
+//       }
+//     );
+
+//     const data = response.data.data;
+//     if (!data?.matchedUser) return null;
+
+//     // --- 2. CALCULATE BASE POINTS ---
+//     const stats = data.matchedUser.submitStats.acSubmissionNum;
+//     const easy = stats.find(i => i.difficulty === "Easy")?.count || 0;
+//     const med = stats.find(i => i.difficulty === "Medium")?.count || 0;
+//     const hard = stats.find(i => i.difficulty === "Hard")?.count || 0;
+
+//     // --- 3. CALCULATE TIME-LIMITED BONUS ---
+//     const solvedBonusToday = new Set();
+    
+//     data.recentSubmissionList?.forEach(sub => {
+//       const subTime = parseInt(sub.timestamp) * 1000; // Convert to milliseconds
+//       console.log(sub.titleSlug, subTime, sub.statusDisplay);
+      
+//       // Check: Accepted AND in the 5 Problems AND within the 24h Window
+//       if (
+//         sub.statusDisplay === "Accepted" && 
+//         DAILY_PROBLEMS.includes(sub.titleSlug) &&
+//         subTime >= yesterdayMidnight && 
+//         subTime < todayMidnight
+//       ) {
+//         solvedBonusToday.add(sub.titleSlug);
+//       }
+//     });
+//     let totalPoints = 0;
+//     totalPoints += (solvedBonusToday.size * 10);
+
+//     // --- 4. UPDATE DATABASE ---
+//     return await User.findOneAndUpdate(
+//       { username: username.toLowerCase() },
+//       { 
+//         easy, 
+//         medium: med, 
+//         hard, 
+//         points: totalPoints, 
+//         lastSync: new Date() 
+//       },
+//       { upsert: true, new: true }
+//     );
+//   } catch (err) {
+//     console.error(`⚠️ Error syncing ${username}: ${err.message}`);
+//     return null;
+//   }
+// }
+
+
+
+
 async function syncUserLeetCodeData(username) {
-  // --- 1. SET THE 24-HOUR WINDOW (IST or UTC) ---
   const now = new Date();
-  const todayMidnight = new Date(now.setHours(0, 0, 0, 0)).getTime();
-  const yesterdayMidnight = todayMidnight - (24 * 60 * 60 * 1000);
+  // Set window to 12:00 AM Today until 11:59 PM Today
+  const startOfToday = new Date(now).setHours(0, 0, 0, 0); 
+  const endOfToday = startOfToday + (24 * 60 * 60 * 1000);
 
   const query = `query combinedUserStats($username: String!) {
     matchedUser(username: $username) {
       submitStats { acSubmissionNum { difficulty count } }
     }
-    recentSubmissionList(username: $username, limit: 20) {
+    recentSubmissionList(username: $username, limit: 50) {
       titleSlug timestamp statusDisplay
     }
   }`;
 
-
   try {
-    const response = await axios.post(
-      "https://leetcode.com/graphql",
-      { query, variables: { username } },
-      { 
-        timeout: 15000, 
-        headers: getHeaders()
-      }
+    const response = await axios.post("https://leetcode.com/graphql", 
+      { query, variables: { username } }, { timeout: 15000, headers: getHeaders() }
     );
 
     const data = response.data.data;
     if (!data?.matchedUser) return null;
 
-    // --- 2. CALCULATE BASE POINTS ---
     const stats = data.matchedUser.submitStats.acSubmissionNum;
     const easy = stats.find(i => i.difficulty === "Easy")?.count || 0;
     const med = stats.find(i => i.difficulty === "Medium")?.count || 0;
     const hard = stats.find(i => i.difficulty === "Hard")?.count || 0;
 
-    // --- 3. CALCULATE TIME-LIMITED BONUS ---
     const solvedBonusToday = new Set();
-    
     data.recentSubmissionList?.forEach(sub => {
-      const subTime = parseInt(sub.timestamp) * 1000; // Convert to milliseconds
+      const subTime = parseInt(sub.timestamp) * 1000;
       
-      // Check: Accepted AND in the 5 Problems AND within the 24h Window
+      // FIXED: Check if it happened TODAY
       if (
         sub.statusDisplay === "Accepted" && 
         DAILY_PROBLEMS.includes(sub.titleSlug) &&
-        subTime >= yesterdayMidnight && 
-        subTime < todayMidnight
+        subTime >= startOfToday && 
+        subTime < endOfToday
       ) {
         solvedBonusToday.add(sub.titleSlug);
       }
     });
+
+    // FIXED: Calculate Total = All-time base stats + Today's Bonus
     let totalPoints = 0;
     totalPoints += (solvedBonusToday.size * 10);
 
-    // --- 4. UPDATE DATABASE ---
     return await User.findOneAndUpdate(
       { username: username.toLowerCase() },
-      { 
-        easy, 
-        medium: med, 
-        hard, 
-        points: totalPoints, 
-        lastSync: new Date() 
-      },
+      { easy, medium: med, hard, points: totalPoints, lastSync: new Date() },
       { upsert: true, new: true }
     );
   } catch (err) {
-    console.error(`⚠️ Error syncing ${username}: ${err.message}`);
     return null;
   }
 }
