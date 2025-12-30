@@ -109,19 +109,19 @@ async function syncUserLeetCodeData(username) {
 
 // --- SYSTEM BATCH ROUTE ---
 app.get("/api/system/sync-batch", async (req, res) => {
-  const { auth } = req.query;
+  // const { auth } = req.query;
   
   // 1. SAFE LIMIT: Only 60 users per "Watchman" visit to prevent timeout
   const syncLimit = 60; 
 
-  if (auth !== process.env.SYNC_SECRET) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+  // if (auth !== process.env.SYNC_SECRET) {
+  //   return res.status(401).json({ error: "Unauthorized" });
+  // }
 
   try {
     const usersToSync = await User.find()
-      .sort({ lastSync: 1 }) 
-      .limit(syncLimit);
+      .sort({ lastSync: 1 }) ;
+      // .limit(syncLimit);
 
     console.log(`🚀 BATCH START: Processing ${usersToSync.length} users...`);
 
