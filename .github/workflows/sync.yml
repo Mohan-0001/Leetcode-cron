@@ -12,4 +12,4 @@ jobs:
     steps:
       - name: Trigger 30-User Batch
         run: |
-          curl -X GET "https://your-backend-url.com/api/system/sync-batch?auth=${{ secrets.SYNC_SECRET }}&limit=30"
+          curl -X GET "https://alfreda-unreasoned-lory.ngrok-free.dev/api/system/sync-batch?auth=${{ secrets.SYNC_SECRET }}&limit=30"
