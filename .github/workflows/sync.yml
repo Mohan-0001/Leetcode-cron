@@ -3,7 +3,7 @@ name: LeetCode High-Frequency Sync
 on:
   schedule:
     # Runs every 6 minutes
-    - cron: '*/14 * * * *'
+    - cron: '*/25 * * * *'
   workflow_dispatch: 
 
 jobs:
@@ -12,5 +12,5 @@ jobs:
     steps:
       - name: Trigger 30-User Batch
         run: |
-          curl -L -X GET "https://alfreda-unreasoned-lory.ngrok-free.dev/api/system/sync-batch?auth=${{ secrets.SYNC_SECRET }}&limit=30" \
+          curl -L -X GET "https://alfreda-unreasoned-lory.ngrok-free.dev/api/system/sync-batch?auth=${{ secrets.SYNC_SECRET }}&limit=376" \
           -H "ngrok-skip-browser-warning: true"
