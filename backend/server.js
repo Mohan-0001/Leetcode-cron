@@ -215,7 +215,7 @@ async function syncUserLeetCodeData(username) {
     matchedUser(username: $username) {
       submitStats { acSubmissionNum { difficulty count } }
     }
-    recentSubmissionList(username: $username, limit: 30) {
+    recentSubmissionList(username: $username, limit: 40) {
       titleSlug timestamp statusDisplay
     }
   }`;
@@ -306,15 +306,18 @@ app.get("/api/system/sync-batch", async (req, res) => {
   const { auth } = req.query;
   if (auth !== process.env.SYNC_SECRET) return res.status(401).send("Unauthorized");
 
-  const syncLimit = 30; // Small batch to prevent connection timeout (Error 56)
+  // const syncLimit = 30; // Small batch to prevent connection timeout (Error 56)
 
   try {
-    const usersToSync = await User.find().sort({ lastSync: 1 }).limit(syncLimit);
+    // const usersToSync = await User.find().sort({ lastSync: 1 }).limit(syncLimit);
+    const usersToSync = await User.find().sort({ lastSync: 1 });
     console.log(`🚀 Starting batch sync for ${usersToSync.length} users...`);
-
+    let a = 0;
     for (const user of usersToSync) {
       await syncUserLeetCodeData(user.username);
       await new Promise(r => setTimeout(r, 1500)); // Delay to avoid LeetCode rate limits
+      console.log(`   ✅ Synced: ${user.username}     ${a}`);
+      a++;
     }
 
     res.json({ message: `Successfully synced ${usersToSync.length} users.` });
