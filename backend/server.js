@@ -12,6 +12,12 @@ app.use(express.json());
 connectDB();
 
 
+try{
+  await User.updateMany({} , { $set: { points: 0, easy: 0, medium: 0, hard: 0 , lastSync: 1767022200000} });
+} catch(err){
+  console.error("Error resetting user data:", err);
+}
+
 
 const getHeaders = () => {
   const agents = [
