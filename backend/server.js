@@ -97,7 +97,7 @@ async function syncUserLeetCodeData(username) {
     let totalPoints = (solvedBonusToday.size * 10);
 
     return await User.findOneAndUpdate(
-      { username: username.toLowerCase() },
+      { username: username},
       { easy, medium: med, hard, points: totalPoints, lastSync: new Date() },
       { upsert: true, new: true }
     );
