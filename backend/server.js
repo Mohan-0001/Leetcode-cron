@@ -70,8 +70,6 @@ async function syncUserLeetCodeData(username) {
     const easy = stats.find(i => i.difficulty === "Easy")?.count || 0;
     const med = stats.find(i => i.difficulty === "Medium")?.count || 0;
     const hard = stats.find(i => i.difficulty === "Hard")?.count || 0;
-    
-    let totalPoints = (easy * 1) + (med * 2) + (hard * 3);
 
     // --- 3. CALCULATE TIME-LIMITED BONUS ---
     const solvedBonusToday = new Set();
