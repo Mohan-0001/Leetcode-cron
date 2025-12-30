@@ -87,7 +87,7 @@ async function syncUserLeetCodeData(username) {
         solvedBonusToday.add(sub.titleSlug);
       }
     });
-
+    let totalPoints = 0;
     totalPoints += (solvedBonusToday.size * 10);
 
     // --- 4. UPDATE DATABASE ---
