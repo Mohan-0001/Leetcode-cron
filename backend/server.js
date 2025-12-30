@@ -112,7 +112,7 @@ async function syncUserLeetCodeData(username) {
 // --- SYSTEM BATCH ROUTE (Triggered by GitHub Action) ---
 app.get("/api/system/sync-batch", async (req, res) => {
   const { auth, limit } = req.query;
-  const syncLimit = parseInt(310) || 3; // Default to 30 for hourly refresh
+ const syncLimit = await User.countDocuments({}); // Default to 30 for hourly refresh
 
   if (auth !== process.env.SYNC_SECRET) {
     console.log("🚫 Unauthorized batch attempt");
