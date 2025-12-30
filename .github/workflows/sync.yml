@@ -1,0 +1,15 @@
+name: LeetCode High-Frequency Sync
+
+on:
+  schedule:
+    # Runs every 6 minutes
+    - cron: '*/6 * * * *'
+  workflow_dispatch: 
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger 30-User Batch
+        run: |
+          curl -X GET "https://your-backend-url.com/api/system/sync-batch?auth=${{ secrets.SYNC_SECRET }}&limit=30"
